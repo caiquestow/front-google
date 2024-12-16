@@ -3,12 +3,60 @@ import React, { useState, useEffect } from 'react';
 const API_BASE_URL = 'http://localhost:8000';
 const GOOGLE_CLIENT_ID = '1084995452617-mbaikph9d2qml25r97vcjvjqluo4npmd.apps.googleusercontent.com';
 
+async function importFromDrive(folderId) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/google/import`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ folderId }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Erro ao importar do Google Drive:', error);
+    throw error;
+  }
+}
+
+async function exportToDrive(textIds, folderId = null) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/google/export`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ textIds, folderId }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Erro ao exportar para o Google Drive:', error);
+    throw error;
+  }
+}
+
 export default function GoogleDriveImport() {
   const [folders, setFolders] = useState([]);
   const [importing, setImporting] = useState(false);
   const [message, setMessage] = useState('');
   const [authenticated, setAuthenticated] = useState(false);
   const [importStatus, setImportStatus] = useState(null);
+  const [textIds, setTextIds] = useState('');
+  const [folderId, setFolderId] = useState('');
 
   const handleGoogleLogin = () => {
     const redirectUri = `${window.location.origin}/callback`;
@@ -80,6 +128,24 @@ export default function GoogleDriveImport() {
     }
   };
 
+  const handleImport = async () => {
+    try {
+      const result = await importFromDrive(folderId);
+      setMessage(result.message);
+    } catch (error) {
+      setMessage('Erro ao importar: ' + error.message);
+    }
+  };
+
+  const handleExport = async () => {
+    try {
+      const result = await exportToDrive(textIds.split(','), folderId);
+      setMessage(result.message);
+    } catch (error) {
+      setMessage('Erro ao exportar: ' + error.message);
+    }
+  };
+
   return (
     <div className="max-w-2xl mx-auto my-6 bg-white rounded-lg shadow-md">
       <div className="p-6">
@@ -140,6 +206,26 @@ export default function GoogleDriveImport() {
             )}
           </div>
         )}
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700">Text IDs (comma separated):</label>
+          <input
+            type="text"
+            value={textIds}
+            onChange={(e) => setTextIds(e.target.value)}
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+          />
+        </div>
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700">Folder ID:</label>
+          <input
+            type="text"
+            value={folderId}
+            onChange={(e) => setFolderId(e.target.value)}
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+          />
+        </div>
+        <button onClick={handleImport} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">Importar do Google Drive</button>
+        <button onClick={handleExport} className="ml-4 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors">Exportar para o Google Drive</button>
       </div>
     </div>
   );
