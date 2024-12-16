@@ -11,4 +11,5 @@ Currently, two official plugins are available:
 Executar:
 
 cd vite-project
+yarn install
 yarn dev
